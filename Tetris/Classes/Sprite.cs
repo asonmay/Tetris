@@ -41,7 +41,7 @@ namespace Tetris
         public Sprite(Vector2 position, Texture2D spriteSheet, Vector2 scale, Rectangle sourceRectangle)
             : this(spriteSheet, position, 0, scale, Color.White, SpriteEffects.None, sourceRectangle, Vector2.Zero) { }
 
-        public void Draw(SpriteBatch spriteBatch)
+        public virtual void Draw(SpriteBatch spriteBatch)
         {
             spriteBatch.Draw(spriteSheet, position, sourceRectangle, color, rotation, origin, scale, effect, 1);
         }

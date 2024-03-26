@@ -11,7 +11,7 @@ namespace Tetris
 {
     public class Sprite
     {
-        protected Vector2 position;
+        public Vector2 position;
         protected float rotation;
         protected Vector2 scale;
         protected Texture2D spriteSheet;

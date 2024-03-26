@@ -11,9 +11,9 @@ namespace Tetris
 {
     public class Block : Sprite
     {
-        protected Color blockColor;
-        protected Point size;
-        protected Point gridPos;
+        private Color blockColor;
+        private Point size;
+        public Point gridPos;
 
         public Block(Vector2 position, float rotation, Vector2 scale, SpriteEffects effect, Vector2 origin, Color blockColor, Point size, Point gridPos)
             :base(null, position, rotation, scale, Color.White, effect, Rectangle.Empty, origin)

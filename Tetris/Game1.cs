@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
 using System;
+using System.Collections.Generic;
 
 namespace Tetris
 {
@@ -21,6 +22,10 @@ namespace Tetris
         private SpriteBatch spriteBatch;
 
         private gameState currentGameState;
+        private Vector2 gameGridPos;
+
+        private Tetromino test;
+        private Dictionary<string, Point[]> TetromioOffsets;
 
         public Game1()
         {
@@ -42,6 +47,18 @@ namespace Tetris
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             currentGameState = gameState.Game;
+            gameGridPos = new Vector2(190, 50);
+
+            TetromioOffsets = new Dictionary<string, Point[]>()
+            {
+                ["T"] = new[] {new Point(0, 0), new Point(-1, 0), new Point(1, 0), new Point(0, -1)},
+                ["L"] = new[] { new Point(0, 0), new Point(0, -1), new Point(0, 1), new Point(1, 1)},
+                ["Block"] = new[] { new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1) },
+                ["Reversed L"] = new[] { new Point(0, 0), new Point(0, -1), new Point(0, 1), new Point(-1, 1) },
+                ["Straight"] = new[] { new Point(0, 0), new Point(-1, 0), new Point(1, 0), new Point(2, 0) },
+            };
+
+            test = new Tetromino(4, new Point(5, 5), TetromioOffsets["Straight"],Color.Red, gameGridPos,new Point(32,32));
         }
 
         protected override void Update(GameTime gameTime)
@@ -61,7 +78,7 @@ namespace Tetris
 
         private void RunGame()
         {
-            
+            test.Update();
         }
 
         protected override void Draw(GameTime gameTime)
@@ -82,9 +99,11 @@ namespace Tetris
 
         private void DrawGame()
         {
-            DrawGrid(new Point(10, 20), 32, 2, new Point(190, 50));
+            DrawGrid(new Point(10, 20), 32, 2, gameGridPos.ToPoint());
             DrawGrid(new Point(4, 4), 32, 2, new Point(30, 50));
             DrawGrid(new Point(4, 4), 32, 2, new Point(540, 50));
+
+            test.Draw(spriteBatch);
         }
 
         private void DrawGrid(Point size, int tileSize, int lineThickness, Point position)

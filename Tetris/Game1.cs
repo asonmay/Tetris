@@ -23,9 +23,17 @@ namespace Tetris
 
         private gameState currentGameState;
         private Vector2 gameGridPos;
+        private bool isTetrominoFalling;
 
-        private Tetromino test;
-        private Dictionary<string, Point[]> TetromioOffsets;
+        private Dictionary<TetrominoType, Point[]> TetromioOffsets;
+
+        private List<Tetromino> tetrominosPlaced;
+        private Tetromino fallingTetromino;
+        private TetrominoType nextTetromino;
+
+        private Random random;
+
+        private int[] stoppingPoints;
 
         public Game1()
         {
@@ -45,20 +53,32 @@ namespace Tetris
         protected override void LoadContent()
         {
             spriteBatch = new SpriteBatch(GraphicsDevice);
+            random = new Random();
 
             currentGameState = gameState.Game;
             gameGridPos = new Vector2(190, 50);
 
-            TetromioOffsets = new Dictionary<string, Point[]>()
+            TetromioOffsets = new Dictionary<TetrominoType, Point[]>()
             {
-                ["T"] = new[] {new Point(0, 0), new Point(-1, 0), new Point(1, 0), new Point(0, -1)},
-                ["L"] = new[] { new Point(0, 0), new Point(0, -1), new Point(0, 1), new Point(1, 1)},
-                ["Block"] = new[] { new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1) },
-                ["Reversed L"] = new[] { new Point(0, 0), new Point(0, -1), new Point(0, 1), new Point(-1, 1) },
-                ["Straight"] = new[] { new Point(0, 0), new Point(-1, 0), new Point(1, 0), new Point(2, 0) },
+                [TetrominoType.T] = new[] {new Point(0, 0), new Point(-1, 0), new Point(1, 0), new Point(0, -1)},
+                [TetrominoType.L] = new[] { new Point(0, 0), new Point(0, -1), new Point(0, 1), new Point(1, 1)},
+                [TetrominoType.Block] = new[] { new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1) },
+                [TetrominoType.ReversedL] = new[] { new Point(0, 0), new Point(0, -1), new Point(0, 1), new Point(-1, 1) },
+                [TetrominoType.Straight] = new[] { new Point(0, 0), new Point(-1, 0), new Point(1, 0), new Point(2, 0) },
             };
 
-            test = new Tetromino(4, new Point(5, 5), TetromioOffsets["Straight"],Color.Red, gameGridPos,new Point(32,32));
+            tetrominosPlaced = new List<Tetromino>();
+            nextTetromino = TetrominoType.T;
+            fallingTetromino = new Tetromino(new Point(5, 0), TetromioOffsets[nextTetromino], Color.Red, gameGridPos, new Point(32, 32), nextTetromino);
+            //nextTetromino = (TetrominoType)random.Next(0, 7);
+            isTetrominoFalling = true;
+            
+
+            stoppingPoints = new int[10];
+            for(int i = 0; i < stoppingPoints.Length; i++)
+            {
+                stoppingPoints[i] = 19;
+            }
         }
 
         protected override void Update(GameTime gameTime)
@@ -69,16 +89,27 @@ namespace Tetris
             switch (currentGameState)
             {
                 case gameState.Game:
-                    RunGame();
+                    RunGame(10, gameTime);
                     break;
             }
 
             base.Update(gameTime);
         }
 
-        private void RunGame()
+        private void RunGame(int gridWidth, GameTime gameTime)
         {
-            test.Update();
+            if(isTetrominoFalling)
+            {
+                fallingTetromino.Update(gridWidth, gameTime, stoppingPoints, out isTetrominoFalling);
+            }
+            else
+            {
+                tetrominosPlaced.Add(fallingTetromino);
+
+                fallingTetromino = new Tetromino(new Point(5, 0), TetromioOffsets[nextTetromino], Color.Red, gameGridPos, new Point(32, 32), nextTetromino);
+                //nextTetromino = (TetrominoType)random.Next(0, 7);
+                isTetrominoFalling = true;
+            }
         }
 
         protected override void Draw(GameTime gameTime)
@@ -103,7 +134,12 @@ namespace Tetris
             DrawGrid(new Point(4, 4), 32, 2, new Point(30, 50));
             DrawGrid(new Point(4, 4), 32, 2, new Point(540, 50));
 
-            test.Draw(spriteBatch);
+            fallingTetromino.Draw(spriteBatch);
+
+            for(int i = 0; i < tetrominosPlaced.Count; i++)
+            {
+                tetrominosPlaced[i].Draw(spriteBatch);
+            }
         }
 
         private void DrawGrid(Point size, int tileSize, int lineThickness, Point position)

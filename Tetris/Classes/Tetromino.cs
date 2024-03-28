@@ -10,9 +10,19 @@ using System.Threading.Tasks;
 
 namespace Tetris
 {
+    public enum TetrominoType
+    {
+        T,
+        L,
+        Straight,
+        Block,
+        ReversedL,
+        Z,
+        ReversedZ,
+    }
+
     public class Tetromino
     {
-        private int speed;
         private Block[] blocks;
         private Point gridPos;
         private Point[] blockOffsets;
@@ -20,65 +30,104 @@ namespace Tetris
         private Point size;
         private Vector2 gamePos;
         private bool hasPressed;
-        private Point[] currentBlockOffsets;
         private int rotation;
+        private TetrominoType type;
+        private bool isPlaced;
+        private TimeSpan time;
 
-        public Tetromino(int speed, Point gridPos, Point[] blockOffsets, Color color, Vector2 gamePos, Point size)
+        public Tetromino(Point gridPos, Point[] blockOffsets, Color color, Vector2 gamePos, Point size, TetrominoType type)
         {
             blocks = new Block[blockOffsets.Length];
-            for(int i = 0; i < blocks.Length; i++)
+            for (int i = 0; i < blocks.Length; i++)
             {
                 Vector2 blockGridPos = new Vector2(gridPos.X + blockOffsets[i].X, gridPos.Y + blockOffsets[i].Y);
                 Vector2 pos = new Vector2(gamePos.X + (blockGridPos.X * size.X), gamePos.Y + (blockGridPos.Y * size.Y));
                 blocks[i] = new Block(pos, color, size, blockGridPos.ToPoint());
             }
 
-            this.speed = speed;
             this.gridPos = gridPos;
             this.blockOffsets = blockOffsets;
             this.color = color;
             this.gamePos = gamePos;
             this.size = size;
+            this.type = type;
 
+            isPlaced = false;
             hasPressed = false;
-            currentBlockOffsets = blockOffsets;
+            time = TimeSpan.Zero;
         }
 
-        public void Update()
+        public void Update(int gridWidth, GameTime gameTime, int[] stopingPoint, out bool isFalling)
         {
+            isFalling = true;
             for(int i = 0; i < blocks.Length; i++)
             {  
                 blocks[i].position = new Vector2(gamePos.X + (blocks[i].gridPos.X * size.X), gamePos.Y + (blocks[i].gridPos.Y * size.Y));
             }
 
-            if(Keyboard.GetState().IsKeyDown(Keys.S))
-            { 
-                if(!hasPressed)
+            if(!isPlaced)
+            {
+                time += gameTime.ElapsedGameTime;
+                MoveIntoGrid(gridWidth);
+
+                if(time.TotalMilliseconds >= 750)
                 {
                     MoveDown();
-                    hasPressed = true;
-                }               
-            }
-            else if (Keyboard.GetState().IsKeyDown(Keys.A))
-            {
-                if (!hasPressed)
+                    time = TimeSpan.Zero;
+                }
+
+                for(int i = 0; i < blocks.Length; i++)
                 {
-                    MoveLeft();
-                    hasPressed = true;
+                    if (blocks[i].gridPos.Y >= stopingPoint[blocks[i].gridPos.X])
+                    {
+                        stopingPoint[blocks[i].gridPos.X] = blocks[i].gridPos.Y;
+                        isFalling = false;
+                    }
+                }
+
+                if(isFalling == false)
+                {
+                    return;
+                }
+
+                if (Keyboard.GetState().IsKeyDown(Keys.S))
+                {
+                    if (!hasPressed)
+                    {
+                        MoveDown();
+                        hasPressed = true;
+                    }
+                }
+                else if (Keyboard.GetState().IsKeyDown(Keys.A))
+                {
+                    if (!hasPressed)
+                    {
+                        MoveLeft();
+                        hasPressed = true;
+                    }
+                }
+                else if (Keyboard.GetState().IsKeyDown(Keys.D))
+                {
+                    if (!hasPressed)
+                    {
+                        MoveRight();
+                        hasPressed = true;
+                    }
+                }
+                else if (Keyboard.GetState().IsKeyDown(Keys.W))
+                {
+                    if (!hasPressed)
+                    {
+                        Rotate(gridWidth);
+                        hasPressed = true;
+                    }
+                }
+                else
+                {
+                    hasPressed = false;
                 }
             }
-            else if (Keyboard.GetState().IsKeyDown(Keys.D))
-            {
-                if (!hasPressed)
-                {
-                    MoveRight();
-                    hasPressed = true;
-                }
-            }
-            else
-            {
-                hasPressed = false;
-            }
+            isFalling = true;
         }
 
         private void MoveDown()
@@ -108,25 +157,57 @@ namespace Tetris
             }
         }
 
-        private void Rotate()
+        private void Rotate(int gridWidth)
         {
+            if(type != TetrominoType.Block)
+            {
+                rotation += 90;
+                if(type == TetrominoType.Straight && rotation >= 180)
+                { 
+                    rotation = 0;
+                }
+                else if(rotation >= 360)
+                {
+                    rotation = 0;
+                }
+            }
+
             for(int i = 0; i < blocks.Length; i++)
             {
+                if(rotation == 0)
+                {
+                    blocks[i].gridPos = new Point(gridPos.X + blockOffsets[i].X, gridPos.Y + blockOffsets[i].Y);
+                }
                 if (rotation == 90)
                 {
-                    currentBlockOffsets[i] = new Point(-blockOffsets[i].Y, -blockOffsets[i].X);
+                    blocks[i].gridPos = new Point(gridPos.X - blockOffsets[i].Y, gridPos.Y - blockOffsets[i].X);
                 }  
                 if(rotation == 180)
                 {
-                    currentBlockOffsets[i] = new Point(-blockOffsets[i].X, -blockOffsets[i].Y);
+                    blocks[i].gridPos = new Point(gridPos.X - blockOffsets[i].X, gridPos.Y - blockOffsets[i].Y);
                 }
                 if (rotation == 270)
                 {
-                    currentBlockOffsets[i] = new Point(blockOffsets[i].Y, blockOffsets[i].X);
+                    blocks[i].gridPos = new Point(gridPos.X + blockOffsets[i].Y, gridPos.Y + blockOffsets[i].X);
                 }
-                blocks[i].gridPos = new Point(gridPos.X + currentBlockOffsets[i].X, gridPos.Y + currentBlockOffsets[i].Y);
             }
-            
+
+            MoveIntoGrid(gridWidth);
+        }
+
+        private void MoveIntoGrid(int gridWidth)
+        {
+            for(int i = 0; i < blocks.Length; i++)
+            {
+                if (blocks[i].gridPos.X < 0)
+                {
+                    MoveRight();
+                }
+                if (blocks[i].gridPos.X >= gridWidth)
+                {
+                    MoveLeft();
+                }
+            }
         }
 
         public void Draw(SpriteBatch spriteBatch)

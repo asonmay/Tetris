@@ -31,7 +31,7 @@ namespace Tetris
         private Vector2 gamePos;
         private bool hasPressed;
         private int rotation;
-        private TetrominoType type;
+        public TetrominoType type;
         private bool isPlaced;
         private TimeSpan time;
 
@@ -53,7 +53,7 @@ namespace Tetris
             this.type = type;
 
             isPlaced = false;
-            hasPressed = false;
+            hasPressed = true;
             time = TimeSpan.Zero;
         }
 
@@ -78,15 +78,21 @@ namespace Tetris
 
                 for(int i = 0; i < blocks.Length; i++)
                 {
-                    if (blocks[i].gridPos.Y >= stopingPoint[blocks[i].gridPos.X])
+                    if (blocks[i].gridPos.Y >= stopingPoint[blocks[i].gridPos.X] + 1)
                     {
-                        stopingPoint[blocks[i].gridPos.X] = blocks[i].gridPos.Y;
                         isFalling = false;
                     }
                 }
 
                 if(isFalling == false)
                 {
+                    for(int i = 0; i < blocks.Length; i++)
+                    {
+                        if (blocks[i].gridPos.Y <= stopingPoint[blocks[i].gridPos.X])
+                        {
+                            stopingPoint[blocks[i].gridPos.X] = blocks[i].gridPos.Y - 2;
+                        }
+                    }
                     return;
                 }
 
@@ -94,8 +100,28 @@ namespace Tetris
                 {
                     if (!hasPressed)
                     {
-                        MoveDown();
-                        hasPressed = true;
+                        bool isTouching = false;
+                        while(!isTouching)
+                        {
+                            MoveDown();
+                            for (int i = 0; i < blocks.Length; i++)
+                            {
+                                if (blocks[i].gridPos.Y >= stopingPoint[blocks[i].gridPos.X])
+                                {
+                                    isTouching = true;
+                                }
+                            }
+                        }
+
+                        for (int i = 0; i < blocks.Length; i++)
+                        {
+                            if (blocks[i].gridPos.Y <= stopingPoint[blocks[i].gridPos.X])
+                            {
+                                stopingPoint[blocks[i].gridPos.X] = blocks[i].gridPos.Y - 1;
+                            }
+                        }
+                        
+                        return;
                     }
                 }
                 else if (Keyboard.GetState().IsKeyDown(Keys.A))
@@ -145,6 +171,15 @@ namespace Tetris
             for (int i = 0; i < blocks.Length; i++)
             {
                 blocks[i].gridPos.X++;
+            }
+        }
+
+        private void MoveUp()
+        {
+            gridPos.Y--;
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                blocks[i].gridPos.Y--;
             }
         }
 

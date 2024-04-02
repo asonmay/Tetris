@@ -65,12 +65,14 @@ namespace Tetris
                 [TetrominoType.Block] = new[] { new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1) },
                 [TetrominoType.ReversedL] = new[] { new Point(0, 0), new Point(0, -1), new Point(0, 1), new Point(-1, 1) },
                 [TetrominoType.Straight] = new[] { new Point(0, 0), new Point(-1, 0), new Point(1, 0), new Point(2, 0) },
+                [TetrominoType.Z] = new[] { new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1) },
+                [TetrominoType.ReversedZ] = new[] { new Point(0, 0), new Point(-1, 0), new Point(-1, 1), new Point(-2, 1) },
             };
 
             tetrominosPlaced = new List<Tetromino>();
             nextTetromino = TetrominoType.T;
             fallingTetromino = new Tetromino(new Point(5, 0), TetromioOffsets[nextTetromino], Color.Red, gameGridPos, new Point(32, 32), nextTetromino);
-            //nextTetromino = (TetrominoType)random.Next(0, 7);
+            nextTetromino = (TetrominoType)random.Next(0, 7);
             isTetrominoFalling = true;
             
 
@@ -106,8 +108,8 @@ namespace Tetris
             {
                 tetrominosPlaced.Add(fallingTetromino);
 
-                fallingTetromino = new Tetromino(new Point(5, 0), TetromioOffsets[nextTetromino], Color.Red, gameGridPos, new Point(32, 32), nextTetromino);
-                //nextTetromino = (TetrominoType)random.Next(0, 7);
+                fallingTetromino = new Tetromino(new Point(5, 0), TetromioOffsets[nextTetromino], new Color(random.Next(20) * 10,random.Next(25) * 10,random.Next(25) * 10), gameGridPos, new Point(32, 32), nextTetromino);
+                nextTetromino = (TetrominoType)random.Next(0, 7);
                 isTetrominoFalling = true;
             }
         }

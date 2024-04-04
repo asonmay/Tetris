@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
 using System;
 using System.Collections.Generic;
+using System.DirectoryServices;
 
 namespace Tetris
 {
@@ -27,14 +28,16 @@ namespace Tetris
 
         private Dictionary<TetrominoType, Point[]> TetromioOffsets;
 
-        private List<Tetromino> tetrominosPlaced;
+        private Color[,] tetrominosPlaced;
         private Tetromino fallingTetromino;
         private TetrominoType nextTetromino;
+        private TetrominoType savedTetromino;
 
         private Random random;
 
         private int[] stoppingPoints;
 
+        private bool isBeingPressed;
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -69,7 +72,7 @@ namespace Tetris
                 [TetrominoType.ReversedZ] = new[] { new Point(0, 0), new Point(-1, 0), new Point(-1, 1), new Point(-2, 1) },
             };
 
-            tetrominosPlaced = new List<Tetromino>();
+            tetrominosPlaced = new Color[10,20];
             nextTetromino = TetrominoType.T;
             fallingTetromino = new Tetromino(new Point(5, 0), TetromioOffsets[nextTetromino], Color.Red, gameGridPos, new Point(32, 32), nextTetromino);
             nextTetromino = (TetrominoType)random.Next(0, 7);
@@ -81,6 +84,16 @@ namespace Tetris
             {
                 stoppingPoints[i] = 19;
             }
+
+            for(int x = 0; x < tetrominosPlaced.GetLength(0); x++)
+            {
+                for(int y = 0; y < tetrominosPlaced.GetLength(1); y++)
+                {
+                    tetrominosPlaced[x, y] = Color.Transparent;
+                }
+            }
+
+            isBeingPressed = false;
         }
 
         protected override void Update(GameTime gameTime)
@@ -103,14 +116,69 @@ namespace Tetris
             if(isTetrominoFalling)
             {
                 fallingTetromino.Update(gridWidth, gameTime, stoppingPoints, out isTetrominoFalling);
+                if (Keyboard.GetState().IsKeyDown(Keys.Space))
+                {                   
+                    if(!isBeingPressed)
+                    {
+                        isBeingPressed = true;
+                        TetrominoType temp = savedTetromino;
+                        savedTetromino = fallingTetromino.type;
+                        fallingTetromino = new Tetromino(new Point(5, 0), TetromioOffsets[nextTetromino], new Color(random.Next(3, 20) * 10, random.Next(3, 20) * 10, random.Next(3, 20) * 10), gameGridPos, new Point(32, 32), savedTetromino);
+                    }
+                }
+                else
+                {
+                    isBeingPressed = false;
+                }
             }
             else
             {
-                tetrominosPlaced.Add(fallingTetromino);
+                for(int i = 0; i < fallingTetromino.blocks.Length; i++)
+                {
+                    tetrominosPlaced[fallingTetromino.blocks[i].gridPos.X, fallingTetromino.blocks[i].gridPos.Y] = fallingTetromino.color;
+                }
 
-                fallingTetromino = new Tetromino(new Point(5, 0), TetromioOffsets[nextTetromino], new Color(random.Next(20) * 10,random.Next(25) * 10,random.Next(25) * 10), gameGridPos, new Point(32, 32), nextTetromino);
+                fallingTetromino = new Tetromino(new Point(5, 0), TetromioOffsets[nextTetromino], new Color(random.Next(3,20) * 10,random.Next(3,20) * 10,random.Next(3,20) * 10), gameGridPos, new Point(32, 32), nextTetromino);
                 nextTetromino = (TetrominoType)random.Next(0, 7);
                 isTetrominoFalling = true;
+
+                for (int y = 0; y < tetrominosPlaced.GetLength(1); y++)
+                {
+                    bool isFullRow = true;
+                    for (int x = 0; x < tetrominosPlaced.GetLength(0); x++)
+                    {
+                        if (tetrominosPlaced[x, y] == Color.Transparent)
+                        {
+                            isFullRow = false;
+                        }
+                    }
+                    if(isFullRow)
+                    {
+                        DeleteRow(y);
+                    }
+                }
+            }
+        }
+
+        private void DeleteRow(int y)
+        {
+            for (int i = y; i >= 0; i--)
+            {
+                for (int g = 0; g < tetrominosPlaced.GetLength(0); g++)
+                {
+                    if (i - 1 < 0)
+                    {
+                        tetrominosPlaced[g, i] = Color.Transparent;
+                    }
+                    else
+                    {
+                        tetrominosPlaced[g, i] = tetrominosPlaced[g, i - 1];
+                    }
+                }
+            }
+            for(int i = 0; i < stoppingPoints.Length; i++)
+            {
+                stoppingPoints[i]++;
             }
         }
 
@@ -138,9 +206,15 @@ namespace Tetris
 
             fallingTetromino.Draw(spriteBatch);
 
-            for(int i = 0; i < tetrominosPlaced.Count; i++)
+            for (int x = 0; x < tetrominosPlaced.GetLength(0); x++)
             {
-                tetrominosPlaced[i].Draw(spriteBatch);
+                for (int y = 0; y < tetrominosPlaced.GetLength(1); y++)
+                {
+                    if (tetrominosPlaced[x,y] != Color.Transparent)
+                    {
+                        spriteBatch.FillRectangle(new Rectangle((int)gameGridPos.X + x * 32, (int)gameGridPos.Y + y * 32, 32, 32), tetrominosPlaced[x, y]);
+                    }
+                }
             }
         }
 
@@ -150,7 +224,14 @@ namespace Tetris
             {
                 for(int y = 0; y < size.Y; y++)
                 {
-                    spriteBatch.DrawRectangle(new Rectangle(position.X + x*tileSize, position.Y + y*tileSize, tileSize, tileSize), Color.White, lineThickness);
+                    if(y == stoppingPoints[x])
+                    {
+                        spriteBatch.DrawRectangle(new Rectangle(position.X + x * tileSize, position.Y + y * tileSize, tileSize, tileSize), Color.Red, lineThickness);
+                    }
+                    else
+                    {
+                        spriteBatch.DrawRectangle(new Rectangle(position.X + x * tileSize, position.Y + y * tileSize, tileSize, tileSize), Color.White, lineThickness);
+                    }
                 }
             }
         }

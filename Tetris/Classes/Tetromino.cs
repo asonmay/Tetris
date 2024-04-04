@@ -23,10 +23,10 @@ namespace Tetris
 
     public class Tetromino
     {
-        private Block[] blocks;
+        public Block[] blocks;
         private Point gridPos;
         private Point[] blockOffsets;
-        private Color color;
+        public Color color;
         private Point size;
         private Vector2 gamePos;
         private bool hasPressed;
@@ -78,7 +78,7 @@ namespace Tetris
 
                 for(int i = 0; i < blocks.Length; i++)
                 {
-                    if (blocks[i].gridPos.Y >= stopingPoint[blocks[i].gridPos.X] + 1)
+                    if (blocks[i].gridPos.Y == stopingPoint[blocks[i].gridPos.X] + 1)
                     {
                         isFalling = false;
                     }
@@ -106,7 +106,7 @@ namespace Tetris
                             MoveDown();
                             for (int i = 0; i < blocks.Length; i++)
                             {
-                                if (blocks[i].gridPos.Y >= stopingPoint[blocks[i].gridPos.X])
+                                if (blocks[i].gridPos.Y == stopingPoint[blocks[i].gridPos.X])
                                 {
                                     isTouching = true;
                                 }

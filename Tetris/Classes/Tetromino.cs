@@ -12,6 +12,7 @@ namespace Tetris
 {
     public enum TetrominoType
     {
+        None,
         T,
         L,
         Straight,
@@ -24,7 +25,7 @@ namespace Tetris
     public class Tetromino
     {
         public Block[] blocks;
-        private Point gridPos;
+        public Point gridPos;
         private Point[] blockOffsets;
         public Color color;
         private Point size;
@@ -57,9 +58,10 @@ namespace Tetris
             time = TimeSpan.Zero;
         }
 
-        public void Update(int gridWidth, GameTime gameTime, int[] stopingPoint, out bool isFalling)
+        public bool Update(int gridWidth, GameTime gameTime, int[] stopingPoint, out bool isFalling)
         {
             isFalling = true;
+            bool gameOver = false;
             for(int i = 0; i < blocks.Length; i++)
             {  
                 blocks[i].position = new Vector2(gamePos.X + (blocks[i].gridPos.X * size.X), gamePos.Y + (blocks[i].gridPos.Y * size.Y));
@@ -67,6 +69,18 @@ namespace Tetris
 
             if(!isPlaced)
             {
+                for (int i = 0; i < blocks.Length; i++)
+                {
+                    if (blocks[i].gridPos.Y == stopingPoint[blocks[i].gridPos.X] + 1)
+                    {
+                        isFalling = false;
+                        if (blocks[i].gridPos.Y <= 0)
+                        {
+                            gameOver = true;
+                        }
+                    }
+                }
+
                 time += gameTime.ElapsedGameTime;
                 MoveIntoGrid(gridWidth);
 
@@ -74,15 +88,7 @@ namespace Tetris
                 {
                     MoveDown();
                     time = TimeSpan.Zero;
-                }
-
-                for(int i = 0; i < blocks.Length; i++)
-                {
-                    if (blocks[i].gridPos.Y == stopingPoint[blocks[i].gridPos.X] + 1)
-                    {
-                        isFalling = false;
-                    }
-                }
+                }          
 
                 if(isFalling == false)
                 {
@@ -93,7 +99,7 @@ namespace Tetris
                             stopingPoint[blocks[i].gridPos.X] = blocks[i].gridPos.Y - 2;
                         }
                     }
-                    return;
+                    return gameOver;
                 }
 
                 if (Keyboard.GetState().IsKeyDown(Keys.S))
@@ -121,7 +127,7 @@ namespace Tetris
                             }
                         }
                         
-                        return;
+                        return gameOver;
                     }
                 }
                 else if (Keyboard.GetState().IsKeyDown(Keys.A))
@@ -154,6 +160,7 @@ namespace Tetris
                 }
             }
             isFalling = true;
+            return gameOver;
         }
 
         private void MoveDown()
@@ -171,15 +178,6 @@ namespace Tetris
             for (int i = 0; i < blocks.Length; i++)
             {
                 blocks[i].gridPos.X++;
-            }
-        }
-
-        private void MoveUp()
-        {
-            gridPos.Y--;
-            for (int i = 0; i < blocks.Length; i++)
-            {
-                blocks[i].gridPos.Y--;
             }
         }
 

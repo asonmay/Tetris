@@ -2,10 +2,15 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
+using Newtonsoft.Json;
 using SharpDX.Direct3D9;
 using System;
 using System.Collections.Generic;
 using System.DirectoryServices;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Tetris
 {
@@ -46,6 +51,25 @@ namespace Tetris
 
         private int score;
         private int level;
+
+        private string myTextBoxDisplayCharacters;
+        private bool isFocued = false;
+        public static GameWindow gw;
+        private bool beingPressed;
+        private Rectangle textbox;
+
+        public struct LeaderBoardEntry
+        {
+            public int score;
+            public string name;
+
+            public LeaderBoardEntry(string name, int score)
+            {
+                this.score = score;
+                this.name = name;
+            }
+        }
+        private List<LeaderBoardEntry> leaderBoard;
 
         public Game1()
         {
@@ -111,21 +135,129 @@ namespace Tetris
             gameFont = Content.Load<SpriteFont>("GameFont");
             gameOverFont = Content.Load<SpriteFont>("GameOverFont");
             level = 0;
+
+            isFocued = false;
+            beingPressed = false;
+            myTextBoxDisplayCharacters = "";
+            gw = Window;
+            textbox = new Rectangle(savedTetrominoGridPos.X, savedTetrominoGridPos.Y + 4 * 32 + 150, 100, (int)gameFont.MeasureString("L").Y);
+
+            leaderBoard = new List<LeaderBoardEntry>((LeaderBoardEntry[])System.Text.Json.JsonSerializer.Deserialize(File.ReadAllText("../../../Leaders.json"), typeof(LeaderBoardEntry[])));
+        }
+
+        private void OnInput(object sender, TextInputEventArgs e)
+        {
+            var k = e.Key;
+            var c = e.Character;
+            if (k == Keys.Space)
+            {
+                myTextBoxDisplayCharacters += ' ';
+            }
+            else if (k == Keys.Back)
+            {
+                myTextBoxDisplayCharacters = myTextBoxDisplayCharacters.Remove(myTextBoxDisplayCharacters.Length - 1, 1);
+            }
+            else
+            {
+                myTextBoxDisplayCharacters += c;
+            }
+
+            Console.WriteLine(myTextBoxDisplayCharacters);
+        }
+
+        private void FocusOnTextbox(bool isMouseClicked, Rectangle box, Point mousePos)
+        {
+            if (isMouseClicked && box.Intersects(new Rectangle(mousePos, new Point(1, 1))))
+            {
+                if (!beingPressed)
+                {
+                    beingPressed = true;
+                    isFocued = !isFocued;
+                    if (isFocued)
+                    {
+                        gw.TextInput += OnInput;
+                    }
+                    else if (!isFocued && myTextBoxDisplayCharacters != "")
+                    {
+                        gw.TextInput -= OnInput;
+                        leaderBoard.Add(new LeaderBoardEntry(myTextBoxDisplayCharacters, score));
+                        int currentIndex = 0;
+                        int numberOfChanges = 0;
+                        while (true)
+                        {
+                            if (currentIndex >= leaderBoard.Count - 1)
+                            {
+                                currentIndex = 0;
+                                if (numberOfChanges == 0)
+                                {
+                                    break;
+                                }
+                                numberOfChanges = 0;
+                            }
+                            if (leaderBoard[currentIndex].score > leaderBoard[currentIndex + 1].score)
+                            {
+                                LeaderBoardEntry temp = leaderBoard[currentIndex];
+                                leaderBoard[currentIndex] = leaderBoard[currentIndex + 1];
+                                leaderBoard[currentIndex + 1] = temp;
+                                numberOfChanges++;
+                            }
+
+                            currentIndex++;
+                        }
+
+                        leaderBoard.Reverse();
+                    }
+                }
+            }
+            else
+            {
+                beingPressed = false;
+            }
         }
 
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            {
+                string fileName = "Leaders.json";
+                string jsonString = JsonConvert.SerializeObject(leaderBoard);
+                File.WriteAllText(fileName, jsonString);
                 Exit();
+            }
+               
 
             switch (currentGameState)
             {
                 case gameState.Game:
                     RunGame(10, gameTime);
                     break;
+                case gameState.GameOver:
+                    UpdateLeaderBoard();
+                    break;
+
             }
 
             base.Update(gameTime);
+        }
+
+        private void UpdateLeaderBoard()
+        {
+            FocusOnTextbox(Mouse.GetState().LeftButton == ButtonState.Pressed, textbox, Mouse.GetState().Position);
+
+            //for (int i = leaderBoard.Count - 1; i > 11; i--)
+            //{
+            //    leaderBoard.RemoveAt(i);
+            //}
+            
+
+            if (Keyboard.GetState().IsKeyDown(Keys.Space))
+            {
+                currentGameState = gameState.Game;
+                string fileName = "Leaders.json";
+                string jsonString = JsonConvert.SerializeObject(leaderBoard);
+                File.WriteAllText(fileName, jsonString);
+                LoadContent();
+            }
         }
 
         private void RunGame(int gridWidth, GameTime gameTime)
@@ -287,7 +419,25 @@ namespace Tetris
         private void DrawGameOver()
         {
             DrawGame();
+
             spriteBatch.DrawString(gameOverFont, "GAME OVER", new Vector2(gameGridPos.X + 48, gameGridPos.Y + 20 * 32), Color.White);
+            spriteBatch.DrawString(gameFont, "PRESS SPACE", new Vector2(savedTetrominoGridPos.X - 10, savedTetrominoGridPos.Y + 5 * 32), Color.White);
+            spriteBatch.DrawString(gameFont, "TO GO HOME", new Vector2(savedTetrominoGridPos.X, savedTetrominoGridPos.Y + 6 * 32 - 15), Color.White);
+
+            for (int i = 0; i < 10; i++)
+            {
+                if (i < leaderBoard.Count)
+                {
+                    spriteBatch.DrawString(gameFont, $"#{i + 1} {leaderBoard[i].name} {leaderBoard[i].score}", new Vector2(nextTetrominoGridPos.X, nextTetrominoGridPos.Y + 4 * 32 + i * gameFont.MeasureString("L").Y), Color.White);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            spriteBatch.FillRectangle(textbox, Color.White);
+            spriteBatch.DrawString(gameFont, myTextBoxDisplayCharacters, textbox.Location.ToVector2(), Color.Black);
         }
 
         private void DrawTetromino(TetrominoType type, Point gridPos)
@@ -304,14 +454,7 @@ namespace Tetris
             {
                 for(int y = 0; y < size.Y; y++)
                 {
-                    if(y == stoppingPoints[x])
-                    {
-                        spriteBatch.DrawRectangle(new Rectangle(position.X + x * tileSize, position.Y + y * tileSize, tileSize, tileSize), Color.Red, lineThickness);
-                    }
-                    else
-                    {
-                        spriteBatch.DrawRectangle(new Rectangle(position.X + x * tileSize, position.Y + y * tileSize, tileSize, tileSize), Color.White, lineThickness);
-                    }
+                    spriteBatch.DrawRectangle(new Rectangle(position.X + x * tileSize, position.Y + y * tileSize, tileSize, tileSize), Color.White, lineThickness);
                 }
             }
         }

@@ -134,7 +134,7 @@ namespace Tetris
                 {
                     if (!hasPressed)
                     {
-                        MoveLeft();
+                        MoveLeft(gridWidth);
                         hasPressed = true;
                     }
                 }
@@ -142,7 +142,7 @@ namespace Tetris
                 {
                     if (!hasPressed)
                     {
-                        MoveRight();
+                        MoveRight(gridWidth);
                         hasPressed = true;
                     }
                 }
@@ -172,22 +172,24 @@ namespace Tetris
             }
         }
 
-        private void MoveRight()
+        private void MoveRight(int gridWidth)
         {
             gridPos.X++;
             for (int i = 0; i < blocks.Length; i++)
             {
                 blocks[i].gridPos.X++;
-            }
+            }           
+            MoveIntoGrid(gridWidth);
         }
 
-        private void MoveLeft()
+        private void MoveLeft(int gridWidth)
         {
             gridPos.X--;
             for (int i = 0; i < blocks.Length; i++)
             {
                 blocks[i].gridPos.X--;
             }
+            MoveIntoGrid(gridWidth);
         }
 
         private void Rotate(int gridWidth)
@@ -234,11 +236,11 @@ namespace Tetris
             {
                 if (blocks[i].gridPos.X < 0)
                 {
-                    MoveRight();
+                    MoveRight(gridWidth);
                 }
                 if (blocks[i].gridPos.X >= gridWidth)
                 {
-                    MoveLeft();
+                    MoveLeft(gridWidth);
                 }
             }
         }

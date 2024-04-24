@@ -123,6 +123,7 @@ namespace Tetris
             string text = File.ReadAllText("Z:/Visual Studio 2022/Projects/Tetris/Tetris/bin/Debug/net6.0-windows/Leaders.json");
             LeaderBoardEntry[] temp = (LeaderBoardEntry[])System.Text.Json.JsonSerializer.Deserialize(text, typeof(LeaderBoardEntry[]));
             leaderBoard = new List<LeaderBoardEntry>(temp);
+            //ResetLeaderBoard();
 
             tetrisLogo = Content.Load<Texture2D>("tetris");
             homeScreenBackgound = Content.Load<Texture2D>("tetrisBackground");
@@ -130,7 +131,15 @@ namespace Tetris
 
             LoadGame();
         }
-
+        
+        private void ResetLeaderBoard()
+        {
+            leaderBoard = new List<LeaderBoardEntry>();
+            for(int i = 0; i < 10; i++)
+            {
+                leaderBoard.Add(new LeaderBoardEntry(100000, "mason"));
+            }
+        }
         private void LoadGame()
         {
             score = 0;
@@ -198,32 +207,8 @@ namespace Tetris
                     else if (!isFocued && myTextBoxDisplayCharacters != "")
                     {
                         gw.TextInput -= OnInput;
-                        leaderBoard.Add(new LeaderBoardEntry(score, myTextBoxDisplayCharacters));
-                        int currentIndex = 0;
-                        int numberOfChanges = 0;
-                        while (true)
-                        {
-                            if (currentIndex >= leaderBoard.Count - 1)
-                            {
-                                currentIndex = 0;
-                                if (numberOfChanges == 0)
-                                {
-                                    break;
-                                }
-                                numberOfChanges = 0;
-                            }
-                            if (leaderBoard[currentIndex].score > leaderBoard[currentIndex + 1].score)
-                            {
-                                LeaderBoardEntry temp = leaderBoard[currentIndex];
-                                leaderBoard[currentIndex] = leaderBoard[currentIndex + 1];
-                                leaderBoard[currentIndex + 1] = temp;
-                                numberOfChanges++;
-                            }
 
-                            currentIndex++;
-                        }
-
-                        leaderBoard.Reverse();
+                        AddToLeaderbaord();
 
                         string fileName = "Leaders.json";
                         string jsonString = System.Text.Json.JsonSerializer.Serialize(leaderBoard.ToArray());
@@ -234,6 +219,44 @@ namespace Tetris
             else
             {
                 beingPressed = false;
+            }
+        }
+
+        private void AddToLeaderbaord()
+        {
+            leaderBoard.Add(new LeaderBoardEntry(score, myTextBoxDisplayCharacters));
+            int currentIndex = 0;
+            int numberOfChanges = 0;
+            while (true)
+            {
+                if (currentIndex >= leaderBoard.Count - 1)
+                {
+                    currentIndex = 0;
+                    if (numberOfChanges == 0)
+                    {
+                        break;
+                    }
+                    numberOfChanges = 0;
+                }
+                if (leaderBoard[currentIndex].score > leaderBoard[currentIndex + 1].score)
+                {
+                    LeaderBoardEntry temp = leaderBoard[currentIndex];
+                    leaderBoard[currentIndex] = leaderBoard[currentIndex + 1];
+                    leaderBoard[currentIndex + 1] = temp;
+                    numberOfChanges++;
+                }
+
+                currentIndex++;
+            }
+
+            leaderBoard.Reverse();
+
+            if (leaderBoard.Count > 20)
+            {
+                for (int i = 19; i < leaderBoard.Count; i++)
+                {
+                    leaderBoard.RemoveAt(i);
+                }
             }
         }
 
@@ -268,7 +291,8 @@ namespace Tetris
 
         private void UpdateHome()
         {
-            if (new Rectangle((int)(GraphicsDevice.Viewport.Width / 2 - (playButton.Width * 0.6f) / 2), 400, (int)(playButton.Width * 0.6f), (int)(playButton.Height * 0.6f)).Intersects(new Rectangle(Mouse.GetState().Position, new Point(1,1))))
+            Rectangle startButton = new Rectangle((int)(GraphicsDevice.Viewport.Width / 2 - (playButton.Width * 0.6f) / 2), 400, (int)(playButton.Width * 0.6f), (int)(playButton.Height * 0.6f));
+            if (startButton.Intersects(new Rectangle(Mouse.GetState().Position, new Point(1,1))) && Mouse.GetState().LeftButton == ButtonState.Pressed)
             {
                 currentGameState = gameState.Game;
                 LoadGame();
@@ -359,24 +383,29 @@ namespace Tetris
                     }
                 }
 
-                switch (rowsDeleted)
-                {
-                    case 1:
-                        score += 40 * (level + 1);
-                        break;
-                    case 2:
-                        score += 100 * (level + 1);
-                        break;
-                    case 3:
-                        score += 300 * (level + 1);
-                        break;
-                    case 4:
-                        score += 1200 * (level + 1);
-                        break;
-                }
+                UpdateScore(rowsDeleted);
+                UpdateStoppingPoints();
             }
         }
 
+        private void UpdateScore(int rowsDeleted)
+        {
+            switch (rowsDeleted)
+            {
+                case 1:
+                    score += 40 * (level + 1);
+                    break;
+                case 2:
+                    score += 100 * (level + 1);
+                    break;
+                case 3:
+                    score += 300 * (level + 1);
+                    break;
+                case 4:
+                    score += 1200 * (level + 1);
+                    break;
+            }
+        }
         private void DeleteRow(int y)
         {
             for (int i = y; i >= 0; i--)
@@ -396,6 +425,30 @@ namespace Tetris
             for(int i = 0; i < stoppingPoints.Length; i++)
             {
                 stoppingPoints[i]++;
+            }
+            UpdateStoppingPoints();
+        }
+         
+        private void UpdateStoppingPoints()
+        {
+            for(int x = 0; x < 10; x++)
+            {
+                stoppingPoints[x] = 0;
+                bool temp = false;
+                for(int y = 0; y < 20; y++)
+                {        
+                    if (tetrominosPlaced[x,y] != Color.Transparent)
+                    {
+                        stoppingPoints[x]--;
+                        temp = true;
+                        break;
+                    }
+                    stoppingPoints[x]++;
+                }
+                if(!temp)
+                {
+                    stoppingPoints[x]--;
+                }
             }
         }
 
@@ -469,7 +522,7 @@ namespace Tetris
             {
                 if (i < leaderBoard.Count)
                 {
-                    spriteBatch.DrawString(gameFont, $"#{i + 1} {leaderBoard[i].name} {leaderBoard[i].score}", new Vector2(nextTetrominoGridPos.X, nextTetrominoGridPos.Y + 4 * 32 + i * gameFont.MeasureString("L").Y), Color.White);
+                    spriteBatch.DrawString(gameFont, $"#{i + 1} {leaderBoard[i].name} {leaderBoard[i].score}", new Vector2(nextTetrominoGridPos.X, nextTetrominoGridPos.Y + 4 * 40 + i * gameFont.MeasureString("L").Y), Color.White);
                 }
                 else
                 {

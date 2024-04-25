@@ -317,7 +317,7 @@ namespace Tetris
         {
             if(isTetrominoFalling)
             {
-                if(fallingTetromino.Update(gridWidth, gameTime, stoppingPoints, out isTetrominoFalling))
+                if(fallingTetromino.Update(gridWidth, gameTime, stoppingPoints, out isTetrominoFalling, tetrominosPlaced))
                 {
                     currentGameState = gameState.GameOver;
                 }
@@ -422,11 +422,11 @@ namespace Tetris
                     }
                 }
             }
-            for(int i = 0; i < stoppingPoints.Length; i++)
-            {
-                stoppingPoints[i]++;
-            }
-            UpdateStoppingPoints();
+            //for(int i = 0; i < stoppingPoints.Length; i++)
+            //{
+            //    stoppingPoints[i]++;
+            //}
+            //UpdateStoppingPoints();
         }
          
         private void UpdateStoppingPoints()

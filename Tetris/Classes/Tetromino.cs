@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
+using SharpDX.Direct2D1.Effects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +27,6 @@ namespace Tetris
     {
         public Block[] blocks;
         public Point gridPos;
-        private Point[] blockOffsets;
         public Color color;
         private Point size;
         private Vector2 gamePos;
@@ -47,7 +47,6 @@ namespace Tetris
             }
 
             this.gridPos = gridPos;
-            this.blockOffsets = blockOffsets;
             this.color = color;
             this.gamePos = gamePos;
             this.size = size;
@@ -69,17 +68,17 @@ namespace Tetris
 
             if(!isPlaced)
             {
-                //for (int i = 0; i < blocks.Length; i++)
-                //{
-                //    if (blocks[i].gridPos.Y == stopingPoint[blocks[i].gridPos.X])
-                //    {
-                //        isFalling = false;
-                //        if (blocks[i].gridPos.Y <= 0)
-                //        {
-                //            gameOver = true;
-                //        }
-                //    }
-                //}
+                for (int i = 0; i < blocks.Length; i++)
+                {
+                    if (blocks[i].gridPos.Y == stopingPoint[blocks[i].gridPos.X])
+                    {
+                        isFalling = false;
+                        if (blocks[i].gridPos.Y <= 0)
+                        {
+                            gameOver = true;
+                        }
+                    }
+                }
 
                 time += gameTime.ElapsedGameTime;
                 MoveIntoGrid(gridWidth, tetrominos);
@@ -90,17 +89,17 @@ namespace Tetris
                     time = TimeSpan.Zero;
                 }
 
-                //if (isFalling == false)
-                //{
-                //    for (int i = 0; i < blocks.Length; i++)
-                //    {
-                //        if (blocks[i].gridPos.Y <= stopingPoint[blocks[i].gridPos.X])
-                //        {
-                //            stopingPoint[blocks[i].gridPos.X] = blocks[i].gridPos.Y - 1;
-                //        }
-                //    }
-                //    return gameOver;
-                //}
+                if (isFalling == false)
+                {
+                    for (int i = 0; i < blocks.Length; i++)
+                    {
+                        if (blocks[i].gridPos.Y <= stopingPoint[blocks[i].gridPos.X])
+                        {
+                            stopingPoint[blocks[i].gridPos.X] = blocks[i].gridPos.Y - 1;
+                        }
+                    }
+                    return gameOver;
+                }
 
                 if (Keyboard.GetState().IsKeyDown(Keys.S))
                 {
@@ -111,23 +110,23 @@ namespace Tetris
                         while(!isTouching)
                         {
                             MoveDown(tetrominos, ref isFalling);
-                            //for (int i = 0; i < blocks.Length; i++)
-                            //{
-                            //    if (blocks[i].gridPos.Y == stopingPoint[blocks[i].gridPos.X])
-                            //    {
-                            //        isTouching = true;
-                            //    }
-                            //}
+                            for (int i = 0; i < blocks.Length; i++)
+                            {
+                                if (blocks[i].gridPos.Y == stopingPoint[blocks[i].gridPos.X])
+                                {
+                                    isTouching = true;
+                                }
+                            }
                         }
 
-                        //for (int i = 0; i < blocks.Length; i++)
-                        //{
-                        //    if (blocks[i].gridPos.Y <= stopingPoint[blocks[i].gridPos.X])
-                        //    {
-                        //        stopingPoint[blocks[i].gridPos.X] = blocks[i].gridPos.Y - 1;
-                        //    }
-                        //}
-                        
+                        for (int i = 0; i < blocks.Length; i++)
+                        {
+                            if (blocks[i].gridPos.Y <= stopingPoint[blocks[i].gridPos.X])
+                            {
+                                stopingPoint[blocks[i].gridPos.X] = blocks[i].gridPos.Y - 1;
+                            }
+                        }
+
                         return gameOver;
                     }
                 }
@@ -183,6 +182,7 @@ namespace Tetris
                 }
             }
             isFalling = true;
+
             return gameOver;
         }
 

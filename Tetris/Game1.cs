@@ -135,10 +135,6 @@ namespace Tetris
         private void ResetLeaderBoard()
         {
             leaderBoard = new List<LeaderBoardEntry>();
-            for(int i = 0; i < 10; i++)
-            {
-                leaderBoard.Add(new LeaderBoardEntry(100000, "mason"));
-            }
         }
         private void LoadGame()
         {
